@@ -1,0 +1,88 @@
+#!/bin/bash
+# gds - Git Deploy Setup
+
+# colors
+RED="\e[1;91m"
+YELLOW="\e[38;5;226m"
+BLUE="\e[1;34m"
+RESET="\e[0m"
+
+if [ -z $1 ]; then
+	echo "Configure server to receive deploy:"
+	echo "  gds server [path]"
+	echo ""
+	echo "Configure local repo do deploy:"
+	echo "  gds local [remote path] [ssh user] [ssh host] [ssh port]"
+	exit
+fi
+
+# server setup
+if [ $1 == "server" ]; then
+	path=$(pwd)
+	echo -e "${YELLOW}Setting up server to deploy a git app...${RESET}"
+	# no path
+	if [ -z $2 ]; then
+		path="${path}/project"
+	else
+		# absolute path
+		if [ $(echo $2 | grep '^/') ]; then
+			path="${2}"
+		# relative path
+		else
+			path="${path}/${2}"
+		fi
+	fi
+	# remove last slash from path
+	path=$(echo $path | sed 's/\/$//')
+
+	path_git="${path}/app.git"
+	mkdir -pv $path_git
+	git init --bare $path_git
+	echo -e "#!/bin/bash
+git --work-tree=$path --git-dir=$path_git checkout -f" >> "${path_git}/hooks/post-receive"
+	chmod +x "${path_git}/hooks/post-receive"
+	echo ""
+	echo -e "${YELLOW}Finished${RESET}"
+
+	# local setup
+elif [ $1 == "local" ]; then
+	path=$2
+	user=$3
+	host=$4
+	port=$5
+	# remove last slash from path
+	if [ $(echo $path | grep '/$') ]; then
+		path=$(echo $path | sed 's/\/$//')
+	fi
+	if [ -z $2 ] || [ -z $3 ] || [ -z $4 ]; then
+		echo "Usage:"
+		echo ""
+		echo "  gds local [remote path] [ssh user] [ssh host] [ssh port]"
+	else
+		if [ -d ".git/" ]; then
+			echo -e "${YELLOW}Setting up local repo to deploy a git app...${RESET}"
+			deploy_remote=deploy
+			# check if $deploy_remote branch exists
+			if [ $(git remote | grep -P "^$deploy_remote$") ]; then
+				echo -e "${RED}Error:${RESET} $deploy_remote already exists as a remote"
+				echo ""
+				echo -e "  Use ${BLUE}git remote remove $deploy_remote${RESET} to remove this remote"
+				exit
+			else
+				# verify if port is a number
+				if [ $5 -eq $5 2>/dev/null ]; then
+					git remote add $deploy_remote ssh://$user@$host:$port$path/app.git
+				else
+					git remote add $deploy_remote $user@$host:$path/app.git
+				fi
+			fi
+			git config --global alias.pud "push -f $deploy_remote HEAD:master"
+			echo ""
+			echo "To deploy your current repo use:"
+			echo ""
+			echo -e " ${BLUE}git pud${RESET}"
+		else
+			echo -e "${RED}Error:${RESET} Not a git repository"
+		fi
+	fi
+fi

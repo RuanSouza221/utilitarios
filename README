@@ -1,0 +1,22 @@
+# Utilitarios
+
+ajustar_hora.sh
+-----------------------------
+| Execute quando tiver uma conexão com a internet
+| para atualizar as horas com o servidor ntp.br
+
+baixar_anime.sh
+------------------------------
+| Coloque os links dos arquivos de video e execute 
+| o script e veja a magia acontecer
+
+agua.sh
+------------------------------
+| Avisa de uma hora em uma hora para beber agua
+| depender de sxvix para rodar um gif
+
+gds
+------------------------------
+| um utilitario para criar deploy no git
+| esse deriva deste repositorio:
+| https://github.com/RodgerOliver/dotfiles/tree/master/.local/bin/git
